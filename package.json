@@ -25,7 +25,8 @@
     "chalk": "^5.6.2",
     "dotenv": "^17.4.2",
     "gradient-string": "^3.0.0",
-    "mongoose": "^9.6.2"
+    "mongoose": "^9.6.2",
+    "pretty-ms": "^9.3.0"
   },
   "devDependencies": {
     "@types/node": "^25.9.1",
