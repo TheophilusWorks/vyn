@@ -40,7 +40,7 @@ export interface VynArgument {
 export interface ArgumentsObject {
   getArgument: (name: string) => string | null;
   getMentionable: (index: number) => { id: string; name: string } | null;
-  getAllMentionable: (index: number) => Record<string, string>;
+  getAllMentionable: () => Record<string, string>;
 }
 
 export type ExecutePayload = MessageCreatePayload & ArgumentsObject;
