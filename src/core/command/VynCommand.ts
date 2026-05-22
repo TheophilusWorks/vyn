@@ -1,5 +1,4 @@
-import { MessageCreatePayload } from "@theophilusdev/conduit";
-import { VynArgument, VynCommandShape } from "../../types.js";
+import { ExecutePayload, VynArgument, VynCommandShape } from "../../types.js";
 
 export class VynCommand {
   public name: string;
@@ -8,7 +7,7 @@ export class VynCommand {
   public argsInfo?: VynArgument[];
   public category?: string;
   public usage?: string;
-  public execute: (args: MessageCreatePayload) => Promise<void>;
+  public execute: (args: ExecutePayload) => Promise<void>;
 
   constructor(commandShape: VynCommandShape) {
     const { name, description, aliases, argsInfo, category, usage, execute } =
