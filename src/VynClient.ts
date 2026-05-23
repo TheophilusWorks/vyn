@@ -3,9 +3,13 @@ import { VynLogger } from "./core/logger/VynLogger.js";
 import { VynCommandRegistry } from "./core/registry/VynCommandRegistry.js";
 import { VynEventRegistry } from "./core/registry/VynEventRegistry.js";
 import { VynConfig } from "./types.js";
+import { VynDispatcher } from "./core/VynDispatcher.js";
+import { VynCLI } from "./VynCLI.js";
 
 export class VynClient {
-  private client: ConduitClient;
+  public client: ConduitClient;
+  public dispatcher: VynDispatcher;
+
   private config: Readonly<VynConfig>;
   private logger: VynLogger;
 
@@ -22,9 +26,11 @@ export class VynClient {
     );
     this.eventRegistry = new VynEventRegistry(
       this.client,
+      this,
       this.config as VynConfig,
       this.logger,
     );
+    this.dispatcher = new VynDispatcher(this, this.commandRegistry, this.config);
   }
 
   public static create(config: VynConfig): VynClient {
@@ -34,8 +40,9 @@ export class VynClient {
   public async init(): Promise<void> {
     try {
       this.logger.log("Initializing VynClient", "info");
-      this.eventRegistry.load();
-      this.commandRegistry.load();
+      await this.eventRegistry.load();
+      await this.commandRegistry.load();
+      await this.login();
       this.logger.log("VynClient initialized successfully.", "ok");
     } catch (e) {
       this.logger.fatal(`Failed to initialize VynClient: ${e}`);
@@ -50,7 +57,14 @@ export class VynClient {
     return this.commandRegistry.getCommandByAlias(alias);
   }
 
-  public login() {
-    this.client.login({ appstate: JSON.parse(this.config.credentials.facebookAppstate) });
+  public async login() {
+    await this.client.login({
+      appstate: JSON.parse(this.config.credentials.facebookAppstate),
+    });
+
+    if (this.config.credentials.cliUID) {
+      const cli = new VynCLI(this, this.config);
+      cli.start();
+    }
   }
 }

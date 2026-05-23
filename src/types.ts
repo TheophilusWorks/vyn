@@ -2,6 +2,7 @@ import {
   ConduitClientConfig,
   MessageCreatePayload,
 } from "@theophilusdev/conduit";
+import { VynClient } from "./VynClient";
 
 export interface VynConfig {
   commandsPath: string;
@@ -31,16 +32,27 @@ export interface VynCommandShape {
 }
 
 export interface VynArgument {
-  type: "argument" | "mentionable";
+  type: "argument" | "mentionable" | "boolean" | "number";
   name: string;
-  description?: string;
+  description: string;
   required?: boolean;
 }
 
 export interface ArgumentsObject {
   getArgument: (name: string) => string | null;
   getMentionable: (index: number) => { id: string; name: string } | null;
-  getAllMentionable: () => Record<string, string>;
+  getAllMentionable: () => Record<string, string> | null;
+  getNumber(name: string): number | null;
+  getBoolean(name: string): boolean | null;
+  getRaw(): string;
 }
 
-export type ExecutePayload = MessageCreatePayload & ArgumentsObject;
+export type ExecutePayload = MessageCreatePayload &
+  ArgumentsObject & { vyn: VynClient };
+
+export interface MessageFormat {
+  header: string;
+  subheader: string;
+  body: string | string[];
+  footer: string | string[];
+}

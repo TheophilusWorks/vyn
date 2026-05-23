@@ -4,6 +4,7 @@ export interface ParsedCommand {
   command: string;
   args: Map<string, string>;
   raw: string;
+  rawArgs: string; // everything after the command name, untrimmed
 }
 
 type NamedToken = { kind: "named"; key: string; value: string };
@@ -26,11 +27,12 @@ export class VynCommandParser {
     if (!commandName) return null;
 
     const argsInfo = command.argsInfo ?? [];
-    const body = rest.join(" ").trim();
+    const rawArgs = rest.join(" ");
+    const body = rawArgs.trim();
     const tokens = body ? this.tokenize(body) : [];
     const args = this.resolve(tokens, argsInfo);
 
-    return { command: commandName, args, raw: input };
+    return { command: commandName, args, raw: input, rawArgs };
   }
 
   private stripPrefix(input: string): string | null {
@@ -86,13 +88,19 @@ export class VynCommandParser {
     return tokens;
   }
 
-  private matchNamedKey(body: string, i: number): { key: string; end: number } | null {
+  private matchNamedKey(
+    body: string,
+    i: number,
+  ): { key: string; end: number } | null {
     const match = /^([a-zA-Z_][\w-]*):/.exec(body.slice(i));
     if (!match) return null;
     return { key: match[1], end: i + match[0].length };
   }
 
-  private readQuotedValue(body: string, i: number): { value: string; end: number } {
+  private readQuotedValue(
+    body: string,
+    i: number,
+  ): { value: string; end: number } {
     let value = "";
     while (i < body.length) {
       if (body[i] === "\\" && body[i + 1] === '"') {
@@ -108,7 +116,10 @@ export class VynCommandParser {
     return { value, end: i };
   }
 
-  private readUntilNextKey(body: string, i: number): { value: string; end: number } {
+  private readUntilNextKey(
+    body: string,
+    i: number,
+  ): { value: string; end: number } {
     let value = "";
     while (i < body.length) {
       const remainingTrimmed = body.slice(i).trimStart();
@@ -120,7 +131,10 @@ export class VynCommandParser {
     return { value, end: i };
   }
 
-  private readPositionalChunk(body: string, i: number): { value: string; end: number } {
+  private readPositionalChunk(
+    body: string,
+    i: number,
+  ): { value: string; end: number } {
     let value = "";
     while (i < body.length && body[i] !== " ") {
       value += body[i++];
@@ -128,14 +142,21 @@ export class VynCommandParser {
     return { value, end: i };
   }
 
-  private resolve(tokens: Token[], argsInfo: VynCommandShape["argsInfo"]): Map<string, string> {
+  private resolve(
+    tokens: Token[],
+    argsInfo: VynCommandShape["argsInfo"],
+  ): Map<string, string> {
     const args = new Map<string, string>();
     const inferrableSlots = (argsInfo ?? [])
-      .filter((a) => a.type === "argument")
+      .filter((a) => a.type !== "mentionable")
       .map((a) => a.name);
 
-    const namedTokens = tokens.filter((t): t is NamedToken => t.kind === "named");
-    const positionalTokens = tokens.filter((t): t is PositionalToken => t.kind === "positional");
+    const namedTokens = tokens.filter(
+      (t): t is NamedToken => t.kind === "named",
+    );
+    const positionalTokens = tokens.filter(
+      (t): t is PositionalToken => t.kind === "positional",
+    );
 
     for (const token of namedTokens) {
       args.set(token.key, token.value);
@@ -156,7 +177,9 @@ export class VynCommandParser {
       const isLastUnfilledSlot = remainingUnfilledSlots.length === 0;
 
       if (isLastUnfilledSlot) {
-        const remainingValues = positionalTokens.slice(positionalCursor).map((t) => t.value);
+        const remainingValues = positionalTokens
+          .slice(positionalCursor)
+          .map((t) => t.value);
         args.set(slotName, remainingValues.join(" "));
         positionalCursor = positionalTokens.length;
       } else {
