@@ -10,38 +10,17 @@ import {
 import { VynClient } from "../VynClient.js";
 
 export class VynDispatcher {
-  private parser: VynCommandParser;
+  public parser: VynCommandParser;
 
   constructor(
     private vyn: VynClient,
-    private readonly registry: VynCommandRegistry,
+    public readonly registry: VynCommandRegistry,
     private readonly config: VynConfig,
   ) {
     this.parser = new VynCommandParser(this.config.prefix);
   }
 
-  public async dispatch(ctx: MessageCreatePayload): Promise<void> {
-    const command =
-      this.registry.getCommand(this.peekCommandName(ctx.body)) ??
-      this.registry.getCommandByAlias(this.peekCommandName(ctx.body));
-
-    if (!command) return;
-
-    const parsed = this.parser.parse(ctx.body, command);
-    if (!parsed) return;
-
-    const argsInfo = command.argsInfo ?? [];
-    const argumentsObject = this.buildArgumentsObject(
-      parsed,
-      ctx.mentions,
-      argsInfo,
-    );
-    const payload = this.buildExecutePayload(ctx, argumentsObject);
-
-    await command.execute(payload);
-  }
-
-  private peekCommandName(body: string): string {
+  public peekCommandName(body: string): string {
     const prefixes = Array.isArray(this.config.prefix)
       ? this.config.prefix
       : [this.config.prefix];
@@ -56,7 +35,7 @@ export class VynDispatcher {
     return "";
   }
 
-  private buildArgumentsObject(
+  public buildArgumentsObject(
     parsed: ParsedCommand,
     mentions: Record<string, string>,
     argsInfo: VynArgument[],
@@ -77,6 +56,24 @@ export class VynDispatcher {
         return raw;
       },
 
+      getEnum: (name) => {
+        const raw = parsed.args.get(name) ?? null;
+        if (raw === null) return null;
+
+        const argInfo = argsInfo.find((a) => a.name === name);
+        if (!argInfo || argInfo.type !== "enum") {
+          throw new Error(`argument "${name}" is not an enum type`);
+        }
+
+        if (!argInfo.choices.includes(raw)) {
+          throw new Error(
+            `argument "${name}" expects one of [${argInfo.choices.join(" | ")}], got "${raw}"`,
+          );
+        }
+
+        return raw;
+      },
+
       getNumber: (name) => {
         const raw = parsed.args.get(name) ?? null;
         if (raw === null) return null;
@@ -87,8 +84,7 @@ export class VynDispatcher {
       },
 
       getBoolean: (name) => {
-        const raw = parsed.args.get(name) ?? null;
-        if (raw === null) return null;
+        const raw = parsed.args.get(name) ?? "false";
         if (raw === "true") return true;
         if (raw === "false") return false;
         throw new Error(
@@ -96,17 +92,26 @@ export class VynDispatcher {
         );
       },
 
-      getMentionable: (index) => {
+      getMentionable: (name) => {
+        const mentionableArgs = argsInfo.filter(
+          (a) => a.type === "mentionable",
+        );
+        const index = mentionableArgs.findIndex((a) => a.name === name);
+        if (index === -1) return null;
         const entry = mentionEntries[index];
         if (!entry) return null;
         return { id: entry[0], name: entry[1] };
       },
 
-      getAllMentionable: () => (mentionEntries.length === 0 ? null : mentions),
+      getAllMentionable: () => {
+        return Object.fromEntries(
+          Object.entries(mentions).map(([id, name]) => [id, { id, name }]),
+        );
+      },
     };
   }
 
-  private buildExecutePayload(
+  public buildExecutePayload(
     ctx: MessageCreatePayload,
     argumentsObject: ArgumentsObject,
   ): ExecutePayload {
