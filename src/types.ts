@@ -49,7 +49,7 @@ export interface ArgumentsObject {
   getMentionable: (name: string) => { id: string; name: string } | null;
   getAllMentionable: () => Record<string, { id: string; name: string }> | null;
   getNumber(name: string): number | null;
-  getBoolean(name: string): boolean | null;
+  getBoolean(name: string): boolean;
   getRaw(): string;
 }
 
