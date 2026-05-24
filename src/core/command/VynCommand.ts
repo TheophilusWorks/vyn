@@ -6,11 +6,11 @@ export class VynCommand {
   public aliases?: string[];
   public argsInfo?: VynArgument[];
   public category?: string;
-  public usage?: string;
+  public details?: string | string[];
   public execute: (args: ExecutePayload) => Promise<void>;
 
   constructor(commandShape: VynCommandShape) {
-    const { name, description, aliases, argsInfo, category, usage, execute } =
+    const { name, description, aliases, argsInfo, category, details, execute } =
       commandShape;
 
     this.name = name;
@@ -18,7 +18,7 @@ export class VynCommand {
     this.aliases = aliases;
     this.argsInfo = argsInfo;
     this.category = category;
-    this.usage = usage;
+    this.details = details;
     this.execute = execute;
   }
 }

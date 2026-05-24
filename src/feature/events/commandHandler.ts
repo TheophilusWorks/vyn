@@ -1,15 +1,76 @@
 import { MessageCreatePayload } from "@theophilusdev/conduit";
-import VynEventBuilder from "../../core/VynEventBuilder.js";
+import VynEventBuilder, { VynNext } from "../../core/VynEventBuilder.js";
 import { VynClient } from "../../VynClient.js";
+import { ParsedCommand } from "../../core/command/VynCommandParser.js";
+import { VynCommand } from "../../core/command/VynCommand.js";
+import { VynDispatcher } from "../../core/VynDispatcher.js";
+
+function resolveCommand(dispatcher: VynDispatcher, body: string) {
+  const name = dispatcher.peekCommandName(body);
+  return (
+    dispatcher.registry.getCommand(name) ??
+    dispatcher.registry.getCommandByAlias(name)
+  );
+}
+
+function validateArgs(
+  ctx: MessageCreatePayload,
+  parsed: ParsedCommand,
+  command: VynCommand,
+): string | null {
+  const argsInfo = command.argsInfo ?? [];
+
+  for (const arg of argsInfo) {
+    if (!arg.required) continue;
+
+    if (arg.type === "mentionable") {
+      const mentionableArgs = argsInfo.filter((a) => a.type === "mentionable");
+      const index = mentionableArgs.findIndex((a) => a.name === arg.name);
+      if (!Object.entries(ctx.mentions)[index]) {
+        return `Missing required argument: @mention for \`${arg.name}\``;
+      }
+    } else {
+      if (!parsed.args.get(arg.name)) {
+        return `Missing required argument: \`${arg.name}\``;
+      }
+    }
+  }
+
+  return null;
+}
 
 export default new VynEventBuilder(
   "message:create",
-  async (ctx: MessageCreatePayload, vyn: VynClient) => {
+  async (ctx: MessageCreatePayload, next: VynNext, _vyn: VynClient) => {
     try {
-      await vyn.dispatcher.dispatch(ctx);
-    } catch (e) {
-      let err = e as Error;
-      ctx.reply(`Error executing command: ${err.message}`);
+      await next();
+    } catch (error) {
+      let e = error as Error;
+      ctx.reply(`Error: ${e.message}`);
     }
+  },
+  async (ctx: MessageCreatePayload, vyn: VynClient) => {
+    const dispatcher = vyn.dispatcher;
+
+    const command = resolveCommand(dispatcher, ctx.body);
+    if (!command) return;
+
+    const parsed = dispatcher.parser.parse(ctx.body, command);
+    if (!parsed) return;
+
+    const validationError = validateArgs(ctx, parsed, command);
+    if (validationError) {
+      ctx.reply(validationError);
+      return;
+    }
+
+    const argsInfo = command.argsInfo ?? [];
+    const argumentsObject = dispatcher.buildArgumentsObject(
+      parsed,
+      ctx.mentions,
+      argsInfo,
+    );
+    const payload = dispatcher.buildExecutePayload(ctx, argumentsObject);
+    await command.execute(payload);
   },
 );

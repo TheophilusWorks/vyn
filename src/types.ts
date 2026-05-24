@@ -25,14 +25,19 @@ export interface VynCommandShape {
   description: string;
   argsInfo?: VynArgument[];
   aliases?: string[];
-  usage?: string;
+  details?: string | string[];
   category?: string; // injected by VynCommandRegistry
 
   execute: (args: ExecutePayload) => Promise<void>;
 }
 
-export interface VynArgument {
-  type: "argument" | "mentionable" | "boolean" | "number";
+export type VynArgument = VynArgumentMetadata &
+  (
+    | { type: "argument" | "mentionable" | "boolean" | "number" }
+    | { type: "enum"; choices: string[] }
+  );
+
+interface VynArgumentMetadata {
   name: string;
   description: string;
   required?: boolean;
@@ -40,8 +45,9 @@ export interface VynArgument {
 
 export interface ArgumentsObject {
   getArgument: (name: string) => string | null;
-  getMentionable: (index: number) => { id: string; name: string } | null;
-  getAllMentionable: () => Record<string, string> | null;
+  getEnum: (name: string) => string | null;
+  getMentionable: (name: string) => { id: string; name: string } | null;
+  getAllMentionable: () => Record<string, { id: string; name: string }> | null;
   getNumber(name: string): number | null;
   getBoolean(name: string): boolean | null;
   getRaw(): string;
