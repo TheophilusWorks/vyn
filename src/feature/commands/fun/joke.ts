@@ -91,14 +91,21 @@ async function singleJoke(ctx: ExecutePayload, joke: JokeResponse) {
 }
 
 async function twoPartJoke(ctx: ExecutePayload, joke: JokeResponse) {
-  return ctx.reply(
+  let msg = await ctx.reply(
     formatMsg({
       header: "Here's a joke for you!",
       subheader: joke.category,
-      body: [joke.setup!, joke.delivery!],
+      body: [joke.setup!, "Reply to this message to see the punchline"],
       footer: formatFlags(joke),
     }),
   );
+
+  let res = await msg.waitResponse({
+    filter: (msg) => msg.senderID === ctx.senderID,
+    timeout: 60000,
+  });
+
+  return res.reply(joke.delivery!);
 }
 
 function formatFlags(joke: JokeResponse): string {

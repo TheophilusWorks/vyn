@@ -4,7 +4,8 @@
   "description": "a multiplatform bot named after my programming language",
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "clean": "rm -rf dist .tsbuildinfo",
+    "build": "npm run clean && tsc --listEmittedFiles",
     "run": "node .",
     "exec": "npm run build && npm run run"
   },

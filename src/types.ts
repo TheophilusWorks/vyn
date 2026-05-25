@@ -8,7 +8,7 @@ export interface VynConfig {
   commandsPath: string;
   eventsPath: string;
 
-  prefix: string | string[];
+  prefix: string;
   adminIDs?: string[];
 
   credentials: {
