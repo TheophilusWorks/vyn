@@ -13,10 +13,11 @@ export function formatMsg(format: MessageFormat): string {
     content: Array.isArray(format.body) ? format.body : [format.body],
   });
   buffer.push({ type: "empty" });
+  buffer.push({ type: "empty" });
 
   if (Array.isArray(format.footer)) {
     for (const item of format.footer) {
-      if (item.trim() === "") continue; // Skip empty lines
+      if (item.trim() === "") continue;
       buffer.push({ type: "footer", content: item });
     }
   } else {
