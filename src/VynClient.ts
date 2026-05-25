@@ -10,7 +10,7 @@ export class VynClient {
   public client: ConduitClient;
   public dispatcher: VynDispatcher;
 
-  private config: Readonly<VynConfig>;
+  public config: Readonly<VynConfig>;
   private logger: VynLogger;
 
   private eventRegistry: VynEventRegistry;
@@ -30,7 +30,11 @@ export class VynClient {
       this.config as VynConfig,
       this.logger,
     );
-    this.dispatcher = new VynDispatcher(this, this.commandRegistry, this.config);
+    this.dispatcher = new VynDispatcher(
+      this,
+      this.commandRegistry,
+      this.config,
+    );
   }
 
   public static create(config: VynConfig): VynClient {
@@ -44,6 +48,9 @@ export class VynClient {
       await this.commandRegistry.load();
       await this.login();
       this.logger.log("VynClient initialized successfully.", "ok");
+      this.logger.collect(this.eventRegistry.getCollection());
+      this.logger.collect(this.commandRegistry.getCollection());
+      this.logger.printSummary("Vyn");
     } catch (e) {
       this.logger.fatal(`Failed to initialize VynClient: ${e}`);
     }

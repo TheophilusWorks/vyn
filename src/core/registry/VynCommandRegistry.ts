@@ -4,6 +4,7 @@ import { importDefault } from "../../utils/importDefault.js";
 import { VynCommand } from "../command/VynCommand.js";
 import { VynLogger } from "../logger/VynLogger.js";
 import fs from "fs";
+import { VynLoggerNode } from "../logger/VynLoggerNode.js";
 
 export class VynCommandRegistry {
   private commands: Map<string, VynCommand> = new Map();
@@ -40,6 +41,7 @@ export class VynCommandRegistry {
         let cmdPath = path.resolve(categoryPath, file);
         let cmdModule = (await importDefault(cmdPath)) as VynCommand;
 
+        cmdModule.category = category;
         cmdModule.aliases?.forEach((alias) =>
           this.aliases.set(alias, cmdModule),
         );
@@ -63,5 +65,50 @@ export class VynCommandRegistry {
   public async clear(): Promise<void> {
     this.commands.clear();
     this.aliases.clear();
+  }
+
+  public getCollection(): VynLoggerNode {
+    let children: VynLoggerNode[] = [];
+
+    for (const [
+      category,
+      commands,
+    ] of this.sortCommandsByCategory().entries()) {
+      let commandChildren: VynLoggerNode[] = [];
+
+      for (const cmd of commands) {
+        commandChildren.push({
+          label: cmd.name,
+          children:
+            cmd.aliases?.map((alias) => ({
+              label: alias,
+              children: [],
+            })) ?? [],
+        });
+      }
+
+      children.push({
+        label: category,
+        children: commandChildren,
+      });
+    }
+
+    return {
+      label: "Commands",
+      children,
+    };
+  }
+
+  private sortCommandsByCategory(): Map<string, VynCommand[]> {
+    let categoryMap: Map<string, VynCommand[]> = new Map();
+
+    for (const cmd of this.commands.values()) {
+      const category = cmd.category || "Uncategorized";
+      const commandsInCategory = categoryMap.get(category) || [];
+      commandsInCategory.push(cmd);
+      categoryMap.set(category, commandsInCategory);
+    }
+
+    return categoryMap;
   }
 }

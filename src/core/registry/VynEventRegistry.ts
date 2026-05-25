@@ -6,12 +6,14 @@ import path from "path";
 import { importDefault } from "../../utils/importDefault.js";
 import VynEventBuilder from "../VynEventBuilder.js";
 import { VynClient } from "../../VynClient.js";
+import { VynLoggerNode } from "../logger/VynLoggerNode.js";
 
 export class VynEventRegistry {
   private client: ConduitClient;
   private vyn: VynClient;
   private config: VynConfig;
   private logger: VynLogger;
+  private eventNames?: string[] = [];
 
   constructor(
     client: ConduitClient,
@@ -44,10 +46,30 @@ export class VynEventRegistry {
       this.client.on(eventModule.event, (...args) =>
         eventModule.execute(vyn, ...args),
       );
+      // lil hack, will delete after collection
+      this.eventNames!.push(eventModule.event);
 
       this.logger.log(`Loaded event from file ${file}.`, "ok");
     }
 
     this.logger.log("All Vyn events loaded successfully.", "ok");
+  }
+
+  public getCollection(): VynLoggerNode {
+    let children: VynLoggerNode[] = [];
+
+    for (const name of this.eventNames!) {
+      children.push({
+        label: name,
+        children: [],
+      });
+    }
+
+    this.eventNames = undefined;
+
+    return {
+      label: "Events",
+      children,
+    };
   }
 }
