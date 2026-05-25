@@ -41,7 +41,8 @@ export default new VynCommand({
     {
       type: "boolean",
       name: "list-cat",
-      description: "The category of the joke",
+      description:
+        "Whether to list all joke categories instead of sending a joke",
     },
   ],
 

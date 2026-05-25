@@ -1,9 +1,9 @@
-import prettyMilliseconds from "pretty-ms";
 import { VynCommand } from "../../../core/command/VynCommand.js";
 import { ExecutePayload } from "../../../types.js";
 import { formatMsg } from "../../utils/formatMsg.js";
 import { usageFormatter } from "../../utils/usageFormatter.js";
 import { capitalize } from "../../utils/capitalize.js";
+import argumentExplainer from "../../utils/argumentExplainer.js";
 
 export default new VynCommand({
   name: "help",
@@ -63,6 +63,7 @@ async function inspectCommand(ctx: ExecutePayload, cmdName: string) {
     `Description: ${command.description}`,
     `Aliases: ${command.aliases?.join(" | ") || "None"}`,
     `Usage: ${usageFormatter(ctx.prefix, command)}`,
+    formatArgExp(command),
   ];
 
   ctx.reply(
@@ -73,4 +74,26 @@ async function inspectCommand(ctx: ExecutePayload, cmdName: string) {
       footer: command.details ? command.details : [],
     }),
   );
+}
+
+function formatArgExp(command: VynCommand): string {
+  let map = argumentExplainer(command);
+
+  let buffer: string[] = [];
+  let isFirst = true;
+
+  for (let [type, args] of map.entries()) {
+    let header = isFirst
+      ? `${capitalize(type)} Arguments:`
+      : `  › ${capitalize(type)} Arguments:`;
+
+    buffer.push(header);
+    for (let arg of args) {
+      buffer.push(`    — ${arg}`);
+    }
+    buffer.push(""); // blank line between sections
+    isFirst = false;
+  }
+
+  return buffer.join("\n").trimEnd();
 }
