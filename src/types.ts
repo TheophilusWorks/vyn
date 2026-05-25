@@ -54,7 +54,7 @@ export interface ArgumentsObject {
 }
 
 export type ExecutePayload = MessageCreatePayload &
-  ArgumentsObject & { vyn: VynClient };
+  ArgumentsObject & { vyn: VynClient, prefix: string };
 
 export interface MessageFormat {
   header: string;

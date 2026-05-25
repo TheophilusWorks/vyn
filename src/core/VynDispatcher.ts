@@ -111,10 +111,27 @@ export class VynDispatcher {
     };
   }
 
+  public getPrefix(body: string): string {
+    let prefixes = Array.isArray(this.config.prefix)
+      ? this.config.prefix
+      : [this.config.prefix];
+    let matchedPrefix = "";
+
+    for (const prefix of prefixes) {
+      if (body.startsWith(prefix) && prefix.length > matchedPrefix.length) {
+        matchedPrefix = prefix;
+        break;
+      }
+    }
+
+    return matchedPrefix;
+  }
+
   public buildExecutePayload(
     ctx: MessageCreatePayload,
     argumentsObject: ArgumentsObject,
+    prefix: string,
   ): ExecutePayload {
-    return Object.assign(ctx, { ...argumentsObject, vyn: this.vyn });
+    return Object.assign(ctx, { ...argumentsObject, vyn: this.vyn, prefix });
   }
 }

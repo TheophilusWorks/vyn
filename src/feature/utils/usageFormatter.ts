@@ -51,7 +51,7 @@ function enumeration(
   choices: string[],
   required: boolean,
 ): string {
-  return `${arg}:${priority(choices.join("|"), required)}`;
+  return `${arg}:${priority(choices.join(" | "), required)}`;
 }
 
 function argument(arg: string, required: boolean): string {
@@ -59,7 +59,7 @@ function argument(arg: string, required: boolean): string {
 }
 
 function boolean(arg: string, required: boolean): string {
-  return `${arg}:${priority("true|false", required)}`;
+  return `${arg}:${priority("true | false", required)}`;
 }
 
 function number(arg: string, required: boolean): string {
