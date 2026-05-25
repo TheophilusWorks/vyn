@@ -27,6 +27,10 @@ export class VynCommandRegistry {
     return this.aliases.get(alias);
   }
 
+  public getAllCommands(): VynCommand[] {
+    return Array.from(this.commands.values());
+  }
+
   public async load(): Promise<void> {
     this.logger.log("Loading all Vyn command categories...", "info");
     let categories = fs.readdirSync(this.config.commandsPath);
@@ -99,7 +103,7 @@ export class VynCommandRegistry {
     };
   }
 
-  private sortCommandsByCategory(): Map<string, VynCommand[]> {
+  public sortCommandsByCategory(): Map<string, VynCommand[]> {
     let categoryMap: Map<string, VynCommand[]> = new Map();
 
     for (const cmd of this.commands.values()) {

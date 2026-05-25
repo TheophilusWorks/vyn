@@ -70,7 +70,11 @@ export default new VynEventBuilder(
       ctx.mentions,
       argsInfo,
     );
-    const payload = dispatcher.buildExecutePayload(ctx, argumentsObject);
+    const payload = dispatcher.buildExecutePayload(
+      ctx,
+      argumentsObject,
+      dispatcher.getPrefix(ctx.body),
+    );
     await command.execute(payload);
   },
 );

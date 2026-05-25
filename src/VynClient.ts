@@ -64,6 +64,14 @@ export class VynClient {
     return this.commandRegistry.getCommandByAlias(alias);
   }
 
+  public getAllCommands() {
+    return this.commandRegistry.getAllCommands();
+  }
+
+  public getAllCommandsByCategory() {
+    return this.commandRegistry.sortCommandsByCategory()
+  }
+
   public async login() {
     await this.client.login({
       appstate: JSON.parse(this.config.credentials.facebookAppstate),
