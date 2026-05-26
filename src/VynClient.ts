@@ -69,7 +69,7 @@ export class VynClient {
   }
 
   public getAllCommandsByCategory() {
-    return this.commandRegistry.sortCommandsByCategory()
+    return this.commandRegistry.sortCommandsByCategory();
   }
 
   public async login() {

@@ -55,6 +55,10 @@ export default new VynEventBuilder(
     const command = resolveCommand(dispatcher, ctx.body);
     if (!command) return;
 
+    if (command.adminOnly && !(await isAdmin(vyn, ctx.senderID))) {
+      return;
+    }
+
     const parsed = dispatcher.parser.parse(ctx.body, command);
     if (!parsed) return;
 
@@ -78,3 +82,8 @@ export default new VynEventBuilder(
     await command.execute(payload);
   },
 );
+
+async function isAdmin(vyn: VynClient, userID: string): Promise<boolean> {
+  let thread = await vyn.client.threads.getInfo(userID);
+  return thread.adminIDs.some((a: any) => a.id === userID) as boolean;
+}

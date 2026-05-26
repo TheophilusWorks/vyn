@@ -26,6 +26,7 @@ export interface VynCommandShape {
   argsInfo?: VynArgument[];
   aliases?: string[];
   details?: string | string[];
+  adminOnly?: boolean;
   category?: string; // injected by VynCommandRegistry
 
   execute: (args: ExecutePayload) => Promise<void>;
