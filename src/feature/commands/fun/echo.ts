@@ -5,7 +5,7 @@ export default new VynCommand({
   description: "Echoes the message back to the user",
   argsInfo: [
     {
-      type: "argument",
+      type: ["replyable", "argument"],
       name: "msg",
       description: "The message to echo back",
       required: true
@@ -13,7 +13,9 @@ export default new VynCommand({
   ],
 
   execute: async (ctx) => {
-    await ctx.reply(ctx.getArgument("msg")!);
+    let content = ctx.getArgument("msg") ?? ctx.getReplyable("msg")?.body!;
+    
+    await ctx.reply(content);
   },
 });
 

@@ -1,6 +1,8 @@
 import {
   ConduitClientConfig,
+  Message,
   MessageCreatePayload,
+  MessageRespondPayload,
 } from "@theophilusdev/conduit";
 import { VynClient } from "./VynClient";
 
@@ -32,10 +34,12 @@ export interface VynCommandShape {
   execute: (args: ExecutePayload) => Promise<void>;
 }
 
+export type VynArgumentBaseType = "argument" | "mentionable" | "boolean" | "number" | "replyable";
+
 export type VynArgument = VynArgumentMetadata &
   (
-    | { type: "argument" | "mentionable" | "boolean" | "number" }
-    | { type: "enum"; choices: string[] }
+    | { type: VynArgumentBaseType | VynArgumentBaseType[] }
+    | { type: "enum" | ["enum"]; choices: string[] }
   );
 
 interface VynArgumentMetadata {
@@ -47,6 +51,7 @@ interface VynArgumentMetadata {
 export interface ArgumentsObject {
   getArgument: (name: string) => string | null;
   getEnum: (name: string) => string | null;
+  getReplyable: (name: string) => Message | null;
   getMentionable: (name: string) => { id: string; name: string } | null;
   getAllMentionable: () => Record<string, { id: string; name: string }> | null;
   getNumber(name: string): number | null;
@@ -54,7 +59,7 @@ export interface ArgumentsObject {
   getRaw(): string;
 }
 
-export type ExecutePayload = MessageCreatePayload &
+export type ExecutePayload = ContextPayload &
   ArgumentsObject & { vyn: VynClient; prefix: string };
 
 export interface MessageFormat {
@@ -63,3 +68,7 @@ export interface MessageFormat {
   body: string | string[];
   footer: string | string[];
 }
+
+// specifically for command handler, not for events in general
+export type ContextPayload = MessageCreatePayload | MessageRespondPayload;
+

@@ -1,3 +1,4 @@
+import { VynArgument } from "../../types";
 import { VynCommand } from "../../core/command/VynCommand";
 
 export default function argumentExplainer(
@@ -7,11 +8,12 @@ export default function argumentExplainer(
 
   for (let arg of command.argsInfo ?? []) {
     let priority = arg.required ? "Required" : "Optional";
-    let type: string[] = buffer.get(arg.type) ?? [];
+    let typeKey = Array.isArray(arg.type) ? arg.type.join(" | ") : arg.type;
+    let entries: string[] = buffer.get(typeKey) ?? [];
 
-    type.push(`'${arg.name}' - ${arg.description} (${priority})`);
+    entries.push(`'${arg.name}' - ${arg.description} (${priority})`);
 
-    buffer.set(arg.type, type);
+    buffer.set(typeKey, entries);
   }
 
   return buffer;

@@ -30,6 +30,7 @@ export default new VynCommand({
         subheader: command.description,
         body: [
           usageFormatter(ctx.vyn.config.prefix, command),
+          "",
           formatArgExp(command),
         ],
         footer: Array.isArray(command.details)

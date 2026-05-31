@@ -1,13 +1,18 @@
-import { MessageCreatePayload } from "@theophilusdev/conduit";
+import {
+  MessageCreatePayload,
+  MessageRespondPayload,
+} from "@theophilusdev/conduit";
 import { VynCommandRegistry } from "./registry/VynCommandRegistry.js";
 import { VynCommandParser, ParsedCommand } from "./command/VynCommandParser.js";
 import {
   ArgumentsObject,
+  ContextPayload,
   ExecutePayload,
   VynArgument,
   VynConfig,
 } from "../types.js";
 import { VynClient } from "../VynClient.js";
+import { hasType } from "../feature/utils/hasType.js";
 
 export class VynDispatcher {
   public parser: VynCommandParser;
@@ -36,42 +41,59 @@ export class VynDispatcher {
   }
 
   public buildArgumentsObject(
+    ctx: ContextPayload,
     parsed: ParsedCommand,
-    mentions: Record<string, string>,
     argsInfo: VynArgument[],
   ): ArgumentsObject {
+    let mentions = ctx.mentions || {};
     const mentionEntries = Object.entries(mentions);
 
-    // build a lookup of arg name -> type for coercion
     const argTypeMap = new Map<string, VynArgument["type"]>();
     for (const arg of argsInfo) {
       argTypeMap.set(arg.name, arg.type);
     }
 
+    const messageReply =
+      (ctx as unknown as MessageRespondPayload).messageReply ?? null;
+
     return {
       getRaw: () => parsed.rawArgs,
 
-      getArgument: (name) => {
-        const raw = parsed.args.get(name) ?? null;
-        return raw;
-      },
+      getArgument: (name) => parsed.args.get(name) ?? null,
 
       getEnum: (name) => {
         const raw = parsed.args.get(name) ?? null;
         if (raw === null) return null;
 
         const argInfo = argsInfo.find((a) => a.name === name);
-        if (!argInfo || argInfo.type !== "enum") {
+        if (!argInfo || !hasType(argInfo, "enum")) {
           throw new Error(`argument "${name}" is not an enum type`);
         }
-
-        if (!argInfo.choices.includes(raw)) {
+        if (!(argInfo as any).choices.includes(raw)) {
           throw new Error(
-            `argument "${name}" expects one of [${argInfo.choices.join(" | ")}], got "${raw}"`,
+            `argument "${name}" expects one of [${(argInfo as any).choices.join(" | ")}], got "${raw}"`,
           );
         }
-
         return raw;
+      },
+
+      getReplyable: (name) => {
+        const argInfo = argsInfo.find((a) => a.name === name);
+        if (!argInfo || !hasType(argInfo, "replyable")) {
+          throw new Error(`argument "${name}" is not a replyable type`);
+        }
+        return messageReply;
+      },
+
+      getMentionable: (name) => {
+        const mentionableArgs = argsInfo.filter((a) =>
+          hasType(a, "mentionable"),
+        );
+        const index = mentionableArgs.findIndex((a) => a.name === name);
+        if (index === -1) return null;
+        const entry = mentionEntries[index];
+        if (!entry) return null;
+        return { id: entry[0], name: entry[1] };
       },
 
       getNumber: (name) => {
@@ -90,17 +112,6 @@ export class VynDispatcher {
         throw new Error(
           `argument "${name}" expects true or false, got "${raw}"`,
         );
-      },
-
-      getMentionable: (name) => {
-        const mentionableArgs = argsInfo.filter(
-          (a) => a.type === "mentionable",
-        );
-        const index = mentionableArgs.findIndex((a) => a.name === name);
-        if (index === -1) return null;
-        const entry = mentionEntries[index];
-        if (!entry) return null;
-        return { id: entry[0], name: entry[1] };
       },
 
       getAllMentionable: () => {
@@ -128,7 +139,7 @@ export class VynDispatcher {
   }
 
   public buildExecutePayload(
-    ctx: MessageCreatePayload,
+    ctx: ContextPayload,
     argumentsObject: ArgumentsObject,
     prefix: string,
   ): ExecutePayload {

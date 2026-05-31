@@ -8,7 +8,7 @@ const VynMessageSchema = Silver.create()
       if (node.content.length === 0) return "";
 
       return node.content
-        .map((line) => `  ›  ${line}`)
+        .map((line) => (line === "" ? "" : `  ›  ${line}`))
         .join("\n  ─────────────\n");
     }
 

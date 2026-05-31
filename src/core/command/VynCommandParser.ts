@@ -148,7 +148,7 @@ export class VynCommandParser {
   ): Map<string, string> {
     const args = new Map<string, string>();
     const inferrableSlots = (argsInfo ?? [])
-      .filter((a) => a.type !== "mentionable")
+      .filter((a) => a.type !== "mentionable" && a.type !== "replyable")
       .map((a) => a.name);
 
     const namedTokens = tokens.filter(

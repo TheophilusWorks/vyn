@@ -15,28 +15,54 @@ export function usageFormatter(prefix: string, command: VynCommand): string {
 }
 
 function formarArg(arg: VynArgument): string {
-  let buffer = "";
-  let req = arg.required ?? false;
+  const req = arg.required ?? false;
+  const types = Array.isArray(arg.type) ? arg.type : [arg.type];
 
-  switch (arg.type) {
-    case "argument":
-      buffer = argument(arg.name, req);
-      break;
-    case "enum":
-      buffer = enumeration(arg.name, arg.choices, req);
-      break;
-    case "boolean":
-      buffer = boolean(arg.name, req);
-      break;
-    case "number":
-      buffer = number(arg.name, req);
-      break;
-    case "mentionable":
-      buffer = mentionable(arg.name, req);
-      break;
+  const parts = types.map((t) => {
+    switch (t) {
+      case "argument":
+        return argument(arg.name, req);
+      case "enum":
+        return enumeration(arg.name, (arg as any).choices, req);
+      case "boolean":
+        return boolean(arg.name, req);
+      case "number":
+        return number(arg.name, req);
+      case "mentionable":
+        return mentionable(arg.name, req);
+      case "replyable":
+        return replyable(arg.name, req);
+      default:
+        return "";
+    }
+  });
+
+  if (parts.length > 1) {
+    const inner = types
+      .map((t) => {
+        switch (t) {
+          case "mentionable":
+            return "@mention";
+          case "replyable":
+            return "reply";
+          case "boolean":
+            return "true | false";
+          case "number":
+            return "number";
+          case "argument":
+            return "text";
+          case "enum":
+            return (arg as any).choices?.join(" | ") ?? "enum";
+          default:
+            return t;
+        }
+      })
+      .join(" | ");
+    const req = arg.required ?? false;
+    return `${arg.name}:${priority(inner, req)}`;
   }
 
-  return buffer;
+  return parts[0];
 }
 
 function priority(arg: string, required: boolean): string {
@@ -52,6 +78,10 @@ function enumeration(
   required: boolean,
 ): string {
   return `${arg}:${priority(choices.join(" | "), required)}`;
+}
+
+function replyable(arg: string, required: boolean): string {
+  return `${arg}:${priority("replyable", required)}`;
 }
 
 function argument(arg: string, required: boolean): string {
