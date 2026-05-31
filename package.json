@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/TheophilusWorks/vyn#readme",
   "dependencies": {
+    "@napi-rs/canvas": "^1.0.0",
     "@theophilusdev/conduit": "file:../../lib/conduit",
     "@theophilusdev/silver": "^1.0.0",
     "axios": "^1.14.0",

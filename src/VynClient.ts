@@ -5,6 +5,10 @@ import { VynEventRegistry } from "./core/registry/VynEventRegistry.js";
 import { VynConfig } from "./types.js";
 import { VynDispatcher } from "./core/VynDispatcher.js";
 import { VynCLI } from "./VynCLI.js";
+import { GlobalFonts } from "@napi-rs/canvas";
+import path from "node:path";
+import { CACHE_DIR } from "./feature/constants/CACHE_DIR.js";
+import { ensureDir } from "./feature/utils/ensureDir.js";
 
 export class VynClient {
   public client: ConduitClient;
@@ -44,6 +48,13 @@ export class VynClient {
   public async init(): Promise<void> {
     try {
       this.logger.log("Initializing VynClient", "info");
+
+      await ensureDir(CACHE_DIR);
+      GlobalFonts.registerFromPath(
+        path.join(__dirname, "../assets/Monserrat-Bold.ttf"),
+        "Monserrat",
+      );
+
       await this.eventRegistry.load();
       await this.commandRegistry.load();
       await this.login();
