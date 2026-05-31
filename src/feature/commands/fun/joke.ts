@@ -101,12 +101,18 @@ async function twoPartJoke(ctx: ExecutePayload, joke: JokeResponse) {
     }),
   );
 
-  let res = await msg.waitResponse({
+  let res = await msg.waitResponse(["message:react", "message:respond"], {
     filter: (msg) => msg.senderID === ctx.senderID,
     timeout: 60000,
   });
 
-  return res.reply(joke.delivery!);
+  if (!res) return;
+
+  if (res.type === "message:react") {
+    ctx.reply(joke.delivery!);
+  } else {
+    res.reply(joke.delivery!);
+  }
 }
 
 function formatFlags(joke: JokeResponse): string {

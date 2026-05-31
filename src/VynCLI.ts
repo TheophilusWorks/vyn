@@ -106,6 +106,9 @@ export class VynCLI {
       waitResponse: () => {
         throw new Error("waitResponse() not supported in CLI");
       },
+      sendTypingIndicator: async () => {
+        process.stdout.write(`[vyn] Typing...`);
+      },
     };
   }
 

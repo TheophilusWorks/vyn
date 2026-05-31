@@ -50,6 +50,8 @@ export default new VynEventBuilder(
     }
   },
   async (ctx: MessageCreatePayload, vyn: VynClient) => {
+    console.log(ctx);
+
     const dispatcher = vyn.dispatcher;
 
     const command = resolveCommand(dispatcher, ctx.body);
@@ -62,6 +64,7 @@ export default new VynEventBuilder(
     const parsed = dispatcher.parser.parse(ctx.body, command);
     if (!parsed) return;
 
+    await ctx.sendTypingIndicator();
     const validationError = validateArgs(ctx, parsed, command);
     if (validationError) {
       ctx.reply(validationError);

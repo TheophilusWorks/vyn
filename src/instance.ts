@@ -29,7 +29,7 @@ export const instance = VynClient.create({
         cleanupIntervalInMS: 60 * 1000, // 1 minute
         ttlInMS: 10 * 60 * 1000, // 10 minutes
       },
-    }
+    },
   },
 
   credentials: {

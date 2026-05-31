@@ -77,6 +77,8 @@ export class VynClient {
       appstate: JSON.parse(this.config.credentials.facebookAppstate),
     });
 
+    this.logger.log("Logged in to Facebook successfully.", "ok");
+
     if (this.config.credentials.cliUID) {
       const cli = new VynCLI(this, this.config);
       cli.start();
