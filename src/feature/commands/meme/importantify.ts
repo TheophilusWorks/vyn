@@ -6,6 +6,10 @@ import { ConduitAttachmentBuilder } from "@theophilusdev/conduit";
 import path from "path";
 import { CACHE_DIR } from "../../constants/CACHE_DIR.js";
 import { ensureDir } from "../../utils/ensureDir.js";
+import {
+  createRenderer,
+  loadImages,
+} from "../../utils/canvas/createRenderer.js";
 
 const BASE_IMG_PATH = path.join(
   __dirname,
@@ -24,6 +28,7 @@ const FONT = `${FONT_SIZE}px Monserrat`;
 export default new VynCommand({
   name: "importantify",
   description: "Importantifies your message and meme-ifies it",
+  aliases: ["impify", "imp", "important"],
   argsInfo: [
     {
       type: "replyable",
@@ -40,13 +45,15 @@ export default new VynCommand({
 
   execute: async (ctx) => {
     let outputPath: string = "";
-    
+
     try {
       let img = ctx.getReplyable("img")!;
       const target = img.attachments[0].url!;
 
       if (img.attachments[0].type !== "photo") {
-        throw new Error("The replied message must contain an image attachment.");
+        throw new Error(
+          "The replied message must contain an image attachment.",
+        );
       }
 
       if (!target) {
@@ -56,7 +63,7 @@ export default new VynCommand({
       const caption = ctx.getArgument("caption") || "";
 
       const { canvas, ctx: c } = createRenderer(CANVAS_SIZE);
-      const { baseImg, targetImg } = await loadAssets(BASE_IMG_PATH, target);
+      const [baseImg, targetImg] = await loadImages(BASE_IMG_PATH, target);
 
       drawBase(c, canvas, baseImg);
       drawTarget(c, canvas, targetImg);
@@ -73,20 +80,6 @@ export default new VynCommand({
     }
   },
 });
-
-function createRenderer(size: number) {
-  const canvas = createCanvas(size, size);
-  const ctx = canvas.getContext("2d");
-  return { canvas, ctx };
-}
-
-async function loadAssets(basePath: string, targetUrl: string) {
-  const [baseImg, targetImg] = await Promise.all([
-    loadImage(basePath),
-    loadImage(targetUrl),
-  ]);
-  return { baseImg, targetImg };
-}
 
 function drawBase(ctx: SKRSContext2D, canvas: any, image: any) {
   ctx.drawImage(image, 0, 0, canvas.width, canvas.height);

@@ -50,10 +50,8 @@ export class VynClient {
       this.logger.log("Initializing VynClient", "info");
 
       await ensureDir(CACHE_DIR);
-      GlobalFonts.registerFromPath(
-        path.join(__dirname, "../assets/Monserrat-Bold.ttf"),
-        "Monserrat",
-      );
+
+      GlobalFonts.loadFontsFromDir(path.join(__dirname, "../assets/fonts"));
 
       await this.eventRegistry.load();
       await this.commandRegistry.load();
