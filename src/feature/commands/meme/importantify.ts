@@ -1,4 +1,9 @@
-import { createCanvas, loadImage, SKRSContext2D } from "@napi-rs/canvas";
+import {
+  createCanvas,
+  GlobalFonts,
+  loadImage,
+  SKRSContext2D,
+} from "@napi-rs/canvas";
 import { VynCommand } from "../../../core/command/VynCommand.js";
 import crypto from "crypto";
 import fs from "fs/promises";
@@ -10,6 +15,7 @@ import {
   createRenderer,
   loadImages,
 } from "../../utils/canvas/createRenderer.js";
+import { wrapText } from "../../utils/canvas/wrapText.js";
 
 const BASE_IMG_PATH = path.join(
   __dirname,
@@ -23,7 +29,7 @@ const PADDING = 3.25;
 const BORDER_SIZE = 7;
 
 const BORDER_COLOR = "#ffffff";
-const FONT = `${FONT_SIZE}px Monserrat`;
+const FONT = `${FONT_SIZE}px Montserrat`;
 
 export default new VynCommand({
   name: "importantify",
@@ -135,29 +141,6 @@ function drawCaption(ctx: SKRSContext2D, canvas: any, caption: string) {
 
     y += FONT_SIZE + 4;
   }
-}
-
-function wrapText(
-  ctx: SKRSContext2D,
-  text: string,
-  maxWidth: number,
-): string[] {
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let current = "";
-
-  for (const word of words) {
-    const test = current ? `${current} ${word}` : word;
-    if (ctx.measureText(test).width > maxWidth && current) {
-      lines.push(current);
-      current = word;
-    } else {
-      current = test;
-    }
-  }
-
-  if (current) lines.push(current);
-  return lines;
 }
 
 async function saveCanvas(canvas: any): Promise<string> {
