@@ -29,16 +29,31 @@ function validateArgs(
   const argsInfo = command.argsInfo ?? [];
   const asRespond = ctx as unknown as MessageRespondPayload;
 
+  const mentionCount = Object.keys(ctx.mentions).length;
+  const requiredMentionableArgs = argsInfo.filter((a) => {
+    if (!a.required) return false;
+    const types = Array.isArray(a.type) ? a.type : [a.type];
+    return types.includes("mentionable");
+  });
+
+  let mentionablesConsumed = 0;
+
   for (const arg of argsInfo) {
     if (!arg.required) continue;
 
     const types = Array.isArray(arg.type) ? arg.type : [arg.type];
 
     const satisfied = types.some((t) => {
-      if (t === "mentionable") return Object.keys(ctx.mentions).length > 0;
+      if (t === "mentionable") {
+        return mentionablesConsumed < mentionCount;
+      }
       if (t === "replyable") return !!asRespond.messageReply;
       return !!parsed.args.get(arg.name);
     });
+
+    if (types.some((t) => t === "mentionable") && satisfied) {
+      mentionablesConsumed++;
+    }
 
     if (!satisfied) {
       if (types.length === 1) {
@@ -155,7 +170,7 @@ export async function handler(ctx: ContextPayload, vyn: VynClient) {
     return;
   }
 
-  const parsed = dispatcher.parser.parse(ctx.body, command);
+  const parsed = dispatcher.parser.parse(ctx.body, command, ctx.mentions);
   if (!parsed) return;
 
   const prefix = dispatcher.getPrefix(ctx.body);

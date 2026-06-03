@@ -1,4 +1,5 @@
-import { VynCommandShape } from "../../types.js";
+import { isSymbolObject } from "util/types";
+import { VynArgument, VynCommandShape } from "../../types.js";
 
 export interface ParsedCommand {
   command: string;
@@ -18,7 +19,11 @@ export class VynCommandParser {
     this.prefix = prefix;
   }
 
-  public parse(input: string, command: VynCommandShape): ParsedCommand | null {
+  public parse(
+    input: string,
+    command: VynCommandShape,
+    mentions: Record<string, string> = {},
+  ): ParsedCommand | null {
     const stripped = this.stripPrefix(input);
     if (stripped === null) return null;
 
@@ -30,7 +35,7 @@ export class VynCommandParser {
     const rawArgs = rest.join(" ");
     const body = rawArgs.trim();
     const tokens = body ? this.tokenize(body) : [];
-    const args = this.resolve(tokens, argsInfo);
+    const args = this.resolve(tokens, argsInfo, mentions);
 
     return { command: commandName, args, raw: input, rawArgs };
   }
@@ -142,14 +147,18 @@ export class VynCommandParser {
     return { value, end: i };
   }
 
+  private isSpecialType(type: VynArgument["type"]): boolean {
+    const specials = ["mentionable", "replyable"];
+    if (Array.isArray(type)) return type.some((t) => specials.includes(t));
+    return specials.includes(type);
+  }
+
   private resolve(
     tokens: Token[],
     argsInfo: VynCommandShape["argsInfo"],
+    mentions: Record<string, string> = {},
   ): Map<string, string> {
     const args = new Map<string, string>();
-    const inferrableSlots = (argsInfo ?? [])
-      .filter((a) => a.type !== "mentionable" && a.type !== "replyable")
-      .map((a) => a.name);
 
     const namedTokens = tokens.filter(
       (t): t is NamedToken => t.kind === "named",
@@ -162,10 +171,39 @@ export class VynCommandParser {
       args.set(token.key, token.value);
     }
 
+    // mark positional token indices consumed by mention names
+    const mentionNames = Object.values(mentions);
+    const consumedIndices = new Set<number>();
+
+    for (const fullName of mentionNames) {
+      const nameParts = fullName.replace(/^@/, "").split(" ");
+
+      outer: for (
+        let i = 0;
+        i <= positionalTokens.length - nameParts.length;
+        i++
+      ) {
+        for (let j = 0; j < nameParts.length; j++) {
+          const token = positionalTokens[i + j].value.replace(/^@/, "");
+          if (token !== nameParts[j]) continue outer;
+        }
+        for (let j = 0; j < nameParts.length; j++) consumedIndices.add(i + j);
+        break;
+      }
+    }
+
+    const availablePositional = positionalTokens.filter(
+      (_, i) => !consumedIndices.has(i),
+    );
+
+    const inferrableSlots = (argsInfo ?? [])
+      .filter((a) => !this.isSpecialType(a.type))
+      .map((a) => a.name);
+
     let positionalCursor = 0;
 
     for (let slotIndex = 0; slotIndex < inferrableSlots.length; slotIndex++) {
-      if (positionalCursor >= positionalTokens.length) break;
+      if (positionalCursor >= availablePositional.length) break;
 
       const slotName = inferrableSlots[slotIndex];
       if (args.has(slotName)) continue;
@@ -177,13 +215,13 @@ export class VynCommandParser {
       const isLastUnfilledSlot = remainingUnfilledSlots.length === 0;
 
       if (isLastUnfilledSlot) {
-        const remainingValues = positionalTokens
+        const remainingValues = availablePositional
           .slice(positionalCursor)
           .map((t) => t.value);
         args.set(slotName, remainingValues.join(" "));
-        positionalCursor = positionalTokens.length;
+        positionalCursor = availablePositional.length;
       } else {
-        args.set(slotName, positionalTokens[positionalCursor].value);
+        args.set(slotName, availablePositional[positionalCursor].value);
         positionalCursor++;
       }
     }
